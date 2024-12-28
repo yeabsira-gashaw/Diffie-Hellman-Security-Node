@@ -21,10 +21,40 @@ const axios = require("axios");
   );
   console.log("Shared Secret:", sharedSecret);
 
-  // Send the client’s public key to the server for this session
-  await axios.post("http://localhost:4000/api/exchange-keys", {
+  // Payload to encrypt
+  const payload = JSON.stringify({ message: "Hello, secure world!" });
+
+  // Compute a checksum for the payload
+  const checksum = crypto.createHash("sha256").update(payload).digest("hex");
+  console.log("Checksum:", checksum);
+
+  // Combine payload and checksum
+  const fullPayload = JSON.stringify({ payload, checksum });
+
+  // Encrypt the full payload using the shared secret (AES-256-GCM)
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(
+    "aes-256-gcm",
+    Buffer.from(sharedSecret, "base64"),
+    iv
+  );
+  let encryptedPayload = cipher.update(fullPayload, "utf8", "hex");
+  encryptedPayload += cipher.final("hex");
+  const authTag = cipher.getAuthTag().toString("hex");
+
+  // Send the encrypted payload and client's public key to the server
+  await axios.post("http://localhost:4000/api/secure-payload", {
     clientPublicKey,
+    encryptedPayload,
+    iv: iv.toString("hex"),
+    authTag,
   });
 
-  console.log("Session key exchange complete");
+  console.log({
+    clientPublicKey,
+    encryptedPayload,
+    iv: iv.toString("hex"),
+    authTag,
+  });
+  console.log("Encrypted payload with client public key sent to server");
 })();
