@@ -63,3 +63,12 @@ The server and client use an **IV** to ensure that each encryption operation pro
 ### Dynamic Key Exchange
 
 The solution supports **Diffie-Hellman** key exchange to securely establish a shared key between the client and server without directly transmitting it. The shared key is then used for further encrypting and decrypting payloads.
+
+## Replay Protection
+
+- **Timestamp Validation**: Payloads must include a timestamp that is within a 5-minute window of the server's current time.
+- **Nonce Tracking**: Each combination of `clientPublicKey` and `timestamp` is stored temporarily to prevent replay attacks.
+
+## Rate Limiting
+
+Implemented using `express-rate-limit` to restrict the number of requests per minute to 100 per IP address.
